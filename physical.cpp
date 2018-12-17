@@ -17,14 +17,25 @@
 #include <iostream>
 #include <string>
 #include "physical.hpp"
+#include "gpio.hpp"
+
 namespace phosphor
 {
 namespace led
 {
 
+using namespace inspur::identify;
 /** @brief Populates key parameters */
 void Physical::setInitialState()
 {
+	auto current = gpioIdentify.getIdentifyLedState();
+	if(current == IdentifyLedState::On){
+		sdbusplus::xyz::openbmc_project::Led::server
+			::Physical::state(Action::On);
+	}else{
+		sdbusplus::xyz::openbmc_project::Led::server
+			::Physical::state(Action::Off);
+	}
 }
 
 /** @brief Overloaded State Property Setter function */
@@ -56,27 +67,15 @@ void Physical::driveLED(Action current, Action request)
     // Transition TO Blinking state
     if (request == Action::Blink)
     {
-        return blinkOperation();
+        return gpioIdentify.blinkIdentifyLed();
     }
 
     // Transition TO Stable states.
-    if(request == Action::On || request == Action::Off)
+    if(request == Action::On)
     {
-        return stableStateOperation(request);
+        return gpioIdentify.setIdentifyLed(IdentifyLedState::On);
     }
-    return;
-}
-
-/** @brief Either TurnON -or- TurnOFF */
-void Physical::stableStateOperation(Action action)
-{
-    return;
-}
-
-/** @brief BLINK the LED */
-void Physical::blinkOperation()
-{
-    return;
+    return gpioIdentify.setIdentifyLed(IdentifyLedState::Off);
 }
 
 } // namespace led

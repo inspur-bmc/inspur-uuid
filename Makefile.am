@@ -1,10 +1,11 @@
 sbin_PROGRAMS = inspur-uuid
 
-phosphor_ledcontroller_SOURCES = \
-				controller.cpp  \
-				physical.cpp
+inspur_uuid_SOURCES = \
+	controller.cpp  \
+	gpio.cpp  \
+	physical.cpp
 
-phosphor_ledcontroller_LDFLAGS = $(SDBUSPLUS_LIBS) \
-                                 $(PHOSPHOR_DBUS_INTERFACES_LIBS)
-phosphor_ledcontroller_CFLAGS =  $(SDBUSPLUS_CFLAGS) \
-                                 $(PHOSPHOR_DBUS_INTERFACES_CFLAGS)
+inspur_uuid_LDFLAGS = $(SDBUSPLUS_LIBS) \
+                      $(PHOSPHOR_DBUS_INTERFACES_LIBS)
+inspur_uuid_CFLAGS =  $(SDBUSPLUS_CFLAGS) \
+                      $(PHOSPHOR_DBUS_INTERFACES_CFLAGS)

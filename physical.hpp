@@ -2,13 +2,20 @@
 
 #include <string>
 #include <fstream>
+#include <iostream>
 #include <sdbusplus/bus.hpp>
 #include <sdbusplus/server/object.hpp>
 #include <xyz/openbmc_project/Led/Physical/server.hpp>
+
+#include "gpio.hpp"
+
+
 namespace phosphor
 {
 namespace led
 {
+
+using namespace inspur::identify;
 
 class Physical : public sdbusplus::server::object::object<
     sdbusplus::xyz::openbmc_project::Led::server::Physical>
@@ -28,21 +35,18 @@ class Physical : public sdbusplus::server::object::object<
          *
          * @param[in] bus       - system dbus handler
          * @param[in] objPath   - The Dbus path that hosts physical LED
-         * @param[in] ledPath   - sysfs path where this LED is exported
          */
         Physical(sdbusplus::bus::bus& bus,
-                const std::string& objPath,
-                const std::string& ledPath) :
-
+                const std::string& objPath,EventPtr &event) :
             sdbusplus::server::object::object<
                 sdbusplus::xyz::openbmc_project::Led::server::Physical>(
-                        bus, objPath.c_str(), true),
-            path(ledPath)
+                        bus, objPath.c_str(), true),gpioIdentify(event)
         {
             // Suppose this is getting launched as part of BMC reboot, then we
             // need to save what the micro-controller currently has.
+	    //
             setInitialState();
-
+	
             // We are now ready.
             emit_object_added();
         }
@@ -55,6 +59,9 @@ class Physical : public sdbusplus::server::object::object<
         Action state(Action value) override;
 
     private:
+
+	inspur::identify::GpioIdentify gpioIdentify;
+
         void setInitialState();
 
         /** @brief Applies the user triggered action on the LED
