@@ -18,6 +18,7 @@
 #include <string>
 #include <algorithm>
 #include "physical.hpp"
+#include "event.hpp"
 #include "config.h"
 #include <systemd/sd-event.h>
 
@@ -53,16 +54,23 @@ int main(int argc, char** argv)
     // Create the Physical LED objects for directing actions.
     // Need to save this else sdbusplus destructor will wipe this off.
     phosphor::led::Physical led(bus, objPath,eventP);
-    std::cout << "objPath:"<<objPath << std::endl;
     /** @brief Claim the bus */
     bus.request_name(busName.c_str());
 
-    /** @brief Wait for client requests */
-    while(true)
-    {
-        // Handle dbus message / signals discarding unhandled
-        bus.process_discard();
-        bus.wait();
-    }
+    try 
+    {   
+        bus.attach_event(eventP.get(), SD_EVENT_PRIORITY_NORMAL);
+        auto ret = sd_event_loop(eventP.get());
+        if (ret < 0)
+        {	
+		std::cout << "sd_event_loop rc=" << ret << std::endl;
+        }
+    }   
+    catch (std::exception& e)
+    {   
+	std::cout << e.what() << std::endl;
+        return -1; 
+    }   
+
     return 0;
 }

@@ -1,45 +1,62 @@
 #pragma once
-#include <systemd/sd-event.h>
-#include <sdbusplus/message.hpp>
 #include <map>
 #include <memory>
 #include <string>
+
+#include <systemd/sd-event.h>
+#include <sdbusplus/message.hpp>
+#include <gpioplus/chip.hpp>
+#include <gpioplus/handle.hpp>
+#include <gpioplus/event.hpp>
+
+#include "event.hpp"
 
 namespace inspur
 {
 namespace identify
 {
 
-struct EventDeleter{
-	void operator()(sd_event *event) const  
-	{
-		event = sd_event_unref(event);
-	}
-};
-using EventPtr = std::unique_ptr<sd_event,EventDeleter>;
-
 enum class IdentifyLedState{
 	On,
 	Off,
-	Blink,
 };
 
 class GpioIdentify{
 
 public:
-	explicit GpioIdentify(EventPtr &event):event(event) {}
+	explicit GpioIdentify(EventPtr &event);
 
-	void setIdentifyLed(IdentifyLedState state);
+
+	void blinkIdentifyLed();
 
 	IdentifyLedState getIdentifyLedState();
 
-	void blinkIdentifyLed();
-private:
-	std::string pinControl;
-	std::string pinRead;
+	void setIdentifyLedState(IdentifyLedState state);
 
-	IdentifyLedState State;
+
+	int getEventFd();
+	void cleanEventData();
+
+private:
+	int gpioHandleCurrentValue;
+
+	std::unique_ptr<gpioplus::Handle> gpioHandle;
+	std::unique_ptr<gpioplus::Event> gpioEvent;
+
+	std::unique_ptr<gpioplus::Handle> buildGpioHandle(uint32_t chip,uint32_t offset);
+	std::unique_ptr<gpioplus::Event>  buildGpioEvent(uint32_t chip,uint32_t offset);
+
+	void toggleIdentifyLed();
+	void initTimer();
+	void startTimer();
+	void setTimeout();
+	static int timeoutHandler(sd_event_source *source,uint64_t usec,void *userdata);
+	void stopTimer();
+
 	EventPtr &event;
+	EventSourcePtr eventSource;
+
+
 };
 
 }

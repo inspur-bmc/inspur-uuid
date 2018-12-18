@@ -69,14 +69,41 @@ void Physical::driveLED(Action current, Action request)
     {
         return gpioIdentify.blinkIdentifyLed();
     }
-
-    // Transition TO Stable states.
-    if(request == Action::On)
-    {
-        return gpioIdentify.setIdentifyLed(IdentifyLedState::On);
-    }
-    return gpioIdentify.setIdentifyLed(IdentifyLedState::Off);
+    if (request == Action::On)
+	return gpioIdentify.setIdentifyLedState(IdentifyLedState::On);
+    return gpioIdentify.setIdentifyLedState(IdentifyLedState::Off);
 }
+
+void Physical::setState(Action action)
+{
+    auto current = sdbusplus::xyz::openbmc_project::Led::server
+                                   ::Physical::state();
+
+    if(current == Action::Blink)
+	    return;
+    sdbusplus::xyz::openbmc_project::Led::server
+			::Physical::state(action);
+}
+
+int Physical::processEvents(sd_event_source* es, int fd, uint32_t revents,void *userdata)
+{
+
+    auto physical = static_cast<Physical *>(userdata);
+    physical->gpioIdentify.cleanEventData();
+    auto state = physical->gpioIdentify.getIdentifyLedState();
+ 
+    if(state == IdentifyLedState::On)
+    {
+	physical->setState(Action::On);
+    }
+    else
+    {
+	physical->setState(Action::Off);
+    }
+
+    return 0;
+}
+
 
 } // namespace led
 } // namespace phosphor

@@ -8,6 +8,7 @@
 #include <xyz/openbmc_project/Led/Physical/server.hpp>
 
 #include "gpio.hpp"
+#include "event.hpp"
 
 
 namespace phosphor
@@ -40,13 +41,14 @@ class Physical : public sdbusplus::server::object::object<
                 const std::string& objPath,EventPtr &event) :
             sdbusplus::server::object::object<
                 sdbusplus::xyz::openbmc_project::Led::server::Physical>(
-                        bus, objPath.c_str(), true),gpioIdentify(event)
+                        bus, objPath.c_str(), true),gpioIdentify(event),event(event)
         {
             // Suppose this is getting launched as part of BMC reboot, then we
             // need to save what the micro-controller currently has.
 	    //
             setInitialState();
-	
+
+    	    registerEventsCallback();	    
             // We are now ready.
             emit_object_added();
         }
@@ -62,7 +64,22 @@ class Physical : public sdbusplus::server::object::object<
 
 	inspur::identify::GpioIdentify gpioIdentify;
 
+	EventPtr &event;
+
+	void registerEventsCallback()
+	{
+		sd_event_source *source = nullptr;
+		auto rc = sd_event_add_io(event.get(),&source,gpioIdentify.getEventFd(),EPOLLIN,processEvents,this);
+		if(rc < 0)
+			std::cout << "add io rc=" << rc << std::endl;
+
+	}
+	static int processEvents(sd_event_source* es, int fd, uint32_t revents,
+			                             void* userData);
+
         void setInitialState();
+
+	void setState(Action action);
 
         /** @brief Applies the user triggered action on the LED
          *   by writing to sysfs
@@ -73,13 +90,6 @@ class Physical : public sdbusplus::server::object::object<
          *  @return None
          */
         void driveLED(Action current, Action request);
-
-        /** @brief Sets the LED to either ON or OFF state
-         *
-         *  @param [in] action - Requested action. Could be OFF or ON
-         *  @return None
-         */
-        void stableStateOperation(Action action);
 
         /** @brief Sets the LED to BLINKING
          *
