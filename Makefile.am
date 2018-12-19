@@ -3,7 +3,8 @@ sbin_PROGRAMS = inspur-uuid
 inspur_uuid_SOURCES = \
 	controller.cpp  \
 	gpio.cpp  \
-	physical.cpp
+	physical.cpp \
+	utility.cpp
 
 inspur_uuid_LDFLAGS = \
 		      -lgpioplus \

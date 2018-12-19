@@ -2,6 +2,7 @@
 #include <thread>
 
 #include "gpio.hpp"
+#include "utility.hpp"
 
 namespace inspur
 {
@@ -14,8 +15,9 @@ static constexpr auto BLINK_TIME_MS = 500;
 
 GpioIdentify::GpioIdentify(EventPtr &event):event(event)
 {
-	gpioHandle = buildGpioHandle(0,2);
-	gpioEvent = buildGpioEvent(0,58);
+	
+	gpioHandle = buildGpioHandle(0,utility::getHandleGpioOffset());
+	gpioEvent =  buildGpioEvent(0,utility::getEventGpioOffset());
 	initTimer();
 
 }
@@ -30,7 +32,6 @@ void GpioIdentify::initTimer()
 	}
 
 	eventSource.reset(source);
-	stopTimer();	
 
 }
 
@@ -45,6 +46,7 @@ std::unique_ptr<gpioplus::Handle> GpioIdentify::buildGpioHandle(uint32_t id,uint
                                                   consumer_label);
 	}catch (const std::exception& e)
 	{
+		std::cout << e.what() << std::endl;
         	return nullptr;
 	}
 }
@@ -133,10 +135,11 @@ void GpioIdentify::setIdentifyLedState(IdentifyLedState state)
 
 void GpioIdentify::toggleIdentifyLed()
 {
-	
-	gpioHandle->setValues({0});
+	uint8_t v = 0;
+	gpioHandle->setValues({v});
 	std::this_thread::sleep_for(std::chrono::milliseconds(PULS_TIME_MS));
-	gpioHandle->setValues({1});
+	v = 1;
+	gpioHandle->setValues({v});
 
 }
 
