@@ -14,10 +14,12 @@
  * limitations under the License.
  */
 
+#include "physical.hpp"
+
+#include "gpio.hpp"
+
 #include <iostream>
 #include <string>
-#include "physical.hpp"
-#include "gpio.hpp"
 
 namespace phosphor
 {
@@ -28,26 +30,29 @@ using namespace inspur::identify;
 /** @brief Populates key parameters */
 void Physical::setInitialState()
 {
-	auto current = gpioIdentify.getIdentifyLedState();
-	if(current == IdentifyLedState::On){
-		sdbusplus::xyz::openbmc_project::Led::server
-			::Physical::state(Action::On);
-	}else{
-		sdbusplus::xyz::openbmc_project::Led::server
-			::Physical::state(Action::Off);
-	}
+    auto current = gpioIdentify.getIdentifyLedState();
+    if (current == IdentifyLedState::On)
+    {
+        sdbusplus::xyz::openbmc_project::Led::server ::Physical::state(
+            Action::On);
+    }
+    else
+    {
+        sdbusplus::xyz::openbmc_project::Led::server ::Physical::state(
+            Action::Off);
+    }
 }
 
 /** @brief Overloaded State Property Setter function */
 auto Physical::state(Action value) -> Action
 {
     // Obtain current operation
-    auto current = sdbusplus::xyz::openbmc_project::Led::server
-                                   ::Physical::state();
+    auto current =
+        sdbusplus::xyz::openbmc_project::Led::server ::Physical::state();
 
     // Update requested operation into base class
-    auto requested = sdbusplus::xyz::openbmc_project::Led::server
-                                   ::Physical::state(value);
+    auto requested =
+        sdbusplus::xyz::openbmc_project::Led::server ::Physical::state(value);
 
     // Apply the action.
     driveLED(current, requested);
@@ -70,40 +75,39 @@ void Physical::driveLED(Action current, Action request)
         return gpioIdentify.blinkIdentifyLed();
     }
     if (request == Action::On)
-	return gpioIdentify.setIdentifyLedState(IdentifyLedState::On);
+        return gpioIdentify.setIdentifyLedState(IdentifyLedState::On);
     return gpioIdentify.setIdentifyLedState(IdentifyLedState::Off);
 }
 
 void Physical::setState(Action action)
 {
-    auto current = sdbusplus::xyz::openbmc_project::Led::server
-                                   ::Physical::state();
+    auto current =
+        sdbusplus::xyz::openbmc_project::Led::server ::Physical::state();
 
-    if(current == Action::Blink)
-	    return;
-    sdbusplus::xyz::openbmc_project::Led::server
-			::Physical::state(action);
+    if (current == Action::Blink)
+        return;
+    sdbusplus::xyz::openbmc_project::Led::server ::Physical::state(action);
 }
 
-int Physical::processEvents(sd_event_source* es, int fd, uint32_t revents,void *userdata)
+int Physical::processEvents(sd_event_source* es, int fd, uint32_t revents,
+                            void* userdata)
 {
 
-    auto physical = static_cast<Physical *>(userdata);
+    auto physical = static_cast<Physical*>(userdata);
     physical->gpioIdentify.cleanEventData();
     auto state = physical->gpioIdentify.getIdentifyLedState();
- 
-    if(state == IdentifyLedState::On)
+
+    if (state == IdentifyLedState::On)
     {
-	physical->setState(Action::On);
+        physical->setState(Action::On);
     }
     else
     {
-	physical->setState(Action::Off);
+        physical->setState(Action::Off);
     }
 
     return 0;
 }
-
 
 } // namespace led
 } // namespace phosphor

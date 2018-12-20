@@ -1,63 +1,64 @@
 #pragma once
-#include <map>
-#include <memory>
-#include <string>
+#include "event.hpp"
 
 #include <systemd/sd-event.h>
-#include <sdbusplus/message.hpp>
-#include <gpioplus/chip.hpp>
-#include <gpioplus/handle.hpp>
-#include <gpioplus/event.hpp>
 
-#include "event.hpp"
+#include <gpioplus/chip.hpp>
+#include <gpioplus/event.hpp>
+#include <gpioplus/handle.hpp>
+#include <map>
+#include <memory>
+#include <sdbusplus/message.hpp>
+#include <string>
 
 namespace inspur
 {
 namespace identify
 {
 
-enum class IdentifyLedState{
-	On,
-	Off,
+enum class IdentifyLedState
+{
+    On,
+    Off,
 };
 
-class GpioIdentify{
+class GpioIdentify
+{
 
-public:
-	explicit GpioIdentify(EventPtr &event);
+  public:
+    explicit GpioIdentify(EventPtr& event);
 
+    void blinkIdentifyLed();
 
-	void blinkIdentifyLed();
+    IdentifyLedState getIdentifyLedState();
 
-	IdentifyLedState getIdentifyLedState();
+    void setIdentifyLedState(IdentifyLedState state);
 
-	void setIdentifyLedState(IdentifyLedState state);
+    int getEventFd();
+    void cleanEventData();
 
+  private:
+    int gpioHandleCurrentValue;
 
-	int getEventFd();
-	void cleanEventData();
+    std::unique_ptr<gpioplus::Handle> gpioHandle;
+    std::unique_ptr<gpioplus::Event> gpioEvent;
 
-private:
-	int gpioHandleCurrentValue;
+    std::unique_ptr<gpioplus::Handle> buildGpioHandle(uint32_t chip,
+                                                      uint32_t offset);
+    std::unique_ptr<gpioplus::Event> buildGpioEvent(uint32_t chip,
+                                                    uint32_t offset);
 
-	std::unique_ptr<gpioplus::Handle> gpioHandle;
-	std::unique_ptr<gpioplus::Event> gpioEvent;
+    void toggleIdentifyLed();
+    void initTimer();
+    void startTimer();
+    void setTimeout();
+    static int timeoutHandler(sd_event_source* source, uint64_t usec,
+                              void* userdata);
+    void stopTimer();
 
-	std::unique_ptr<gpioplus::Handle> buildGpioHandle(uint32_t chip,uint32_t offset);
-	std::unique_ptr<gpioplus::Event>  buildGpioEvent(uint32_t chip,uint32_t offset);
-
-	void toggleIdentifyLed();
-	void initTimer();
-	void startTimer();
-	void setTimeout();
-	static int timeoutHandler(sd_event_source *source,uint64_t usec,void *userdata);
-	void stopTimer();
-
-	EventPtr &event;
-	EventSourcePtr eventSource;
-
-
+    EventPtr& event;
+    EventSourcePtr eventSource;
 };
 
-}
-}
+} // namespace identify
+} // namespace inspur

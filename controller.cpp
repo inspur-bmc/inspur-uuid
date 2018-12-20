@@ -14,14 +14,16 @@
  * limitations under the License.
  */
 
-#include <iostream>
-#include <string>
-#include <algorithm>
-#include "physical.hpp"
-#include "event.hpp"
 #include "config.h"
+
+#include "event.hpp"
+#include "physical.hpp"
+
 #include <systemd/sd-event.h>
 
+#include <algorithm>
+#include <iostream>
+#include <string>
 
 int main(int argc, char** argv)
 {
@@ -29,8 +31,8 @@ int main(int argc, char** argv)
     auto name = "inspur_identify";
 
     // Unique bus name representing a single LED.
-    auto busName =  std::string(BUSNAME) + '.' + name;
-    auto objPath =  std::string(OBJPATH) + '/' + name;
+    auto busName = std::string(BUSNAME) + '.' + name;
+    auto objPath = std::string(OBJPATH) + '/' + name;
 
     // Get a handle to system dbus.
     auto bus = std::move(sdbusplus::bus::new_default());
@@ -38,39 +40,38 @@ int main(int argc, char** argv)
     // Add systemd object manager.
     sdbusplus::server::manager::manager(bus, objPath.c_str());
 
-    sd_event *event = nullptr;
+    sd_event* event = nullptr;
 
     auto rc = sd_event_default(&event);
-    if(rc < 0){
-	    std::cout << "sd_event_default rc=" << rc << std::endl;
-	    return rc;
+    if (rc < 0)
+    {
+        std::cout << "sd_event_default rc=" << rc << std::endl;
+        return rc;
     }
 
     inspur::identify::EventPtr eventP{event};
     event = nullptr;
 
-
-    
     // Create the Physical LED objects for directing actions.
     // Need to save this else sdbusplus destructor will wipe this off.
-    phosphor::led::Physical led(bus, objPath,eventP);
+    phosphor::led::Physical led(bus, objPath, eventP);
     /** @brief Claim the bus */
     bus.request_name(busName.c_str());
 
-    try 
-    {   
+    try
+    {
         bus.attach_event(eventP.get(), SD_EVENT_PRIORITY_NORMAL);
         auto ret = sd_event_loop(eventP.get());
         if (ret < 0)
-        {	
-		std::cout << "sd_event_loop rc=" << ret << std::endl;
+        {
+            std::cout << "sd_event_loop rc=" << ret << std::endl;
         }
-    }   
+    }
     catch (std::exception& e)
-    {   
-	std::cout << e.what() << std::endl;
-        return -1; 
-    }   
+    {
+        std::cout << e.what() << std::endl;
+        return -1;
+    }
 
     return 0;
 }
