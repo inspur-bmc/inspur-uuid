@@ -29,6 +29,24 @@ PKG_CHECK_MODULES([PHOSPHOR_DBUS_INTERFACES], [phosphor-dbus-interfaces],, [AC_M
 AX_PTHREAD([GTEST_CPPFLAGS="-DGTEST_HAS_PTHREAD=1"],[GTEST_CPPFLAGS="-DGTEST_HAS_PTHREAD=0"])
 AC_SUBST(GTEST_CPPFLAGS)
 
+
+PKG_PROG_PKG_CONFIG
+AC_ARG_WITH([systemdsystemunitdir],
+     [AS_HELP_STRING([--with-systemdsystemunitdir=DIR], [Directory for systemd service files])],,
+     [with_systemdsystemunitdir=auto])
+AS_IF([test "x$with_systemdsystemunitdir" = "xyes" -o "x$with_systemdsystemunitdir" = "xauto"], [
+     def_systemdsystemunitdir=$($PKG_CONFIG --variable=systemdsystemunitdir systemd)
+
+     AS_IF([test "x$def_systemdsystemunitdir" = "x"],
+   [AS_IF([test "x$with_systemdsystemunitdir" = "xyes"],
+    [AC_MSG_ERROR([systemd support requested but pkg-config unable to query systemd package])])
+    with_systemdsystemunitdir=no],
+   [with_systemdsystemunitdir="$def_systemdsystemunitdir"])])
+AS_IF([test "x$with_systemdsystemunitdir" != "xno"],
+      [AC_SUBST([systemdsystemunitdir], [$with_systemdsystemunitdir])])
+AM_CONDITIONAL([HAVE_SYSTEMD], [test "x$with_systemdsystemunitdir" != "xno"])
+
+
 AC_ARG_VAR(BUSNAME, [The Dbus busname to own])
 AS_IF([test "x$BUSNAME" == "x"], [BUSNAME="xyz.openbmc_project.LED.Controller"])
 AC_DEFINE_UNQUOTED([BUSNAME], ["$BUSNAME"], [The Dbus busname to own])
@@ -38,4 +56,5 @@ AC_DEFINE_UNQUOTED([OBJPATH], ["$OBJPATH"], [The physical LED controller Dbus ro
 
 # Create configured output
 AC_CONFIG_FILES([Makefile])
+AC_CONFIG_FILES([xyz.openbmc_project.inspur.identify_led.controller.service])
 AC_OUTPUT

@@ -1,0 +1,12 @@
+[Unit]
+Description=Inspur Identify Led Manager
+ConditionFileNotEmpty=/etc/default/obmc/identify/gpio.conf
+After=xyz.openbmc_project.ObjectMapper.service
+
+[Service]
+Restart=on-failure
+ExecStart=@sbindir@/inspur-uuid
+EnvironmentFile=/etc/default/obmc/identify/gpio.conf
+
+[Install]
+WantedBy=obmc-standby.target

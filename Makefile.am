@@ -1,5 +1,9 @@
 sbin_PROGRAMS = inspur-uuid
 
+if HAVE_SYSTEMD
+systemdsystemunit_DATA = \
+	xyz.openbmc_project.inspur.identify_led.controller.service
+endif
 inspur_uuid_SOURCES = \
 	controller.cpp  \
 	gpio.cpp  \
